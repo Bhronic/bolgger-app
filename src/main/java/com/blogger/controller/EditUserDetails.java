@@ -154,8 +154,9 @@ public class EditUserDetails extends HttpServlet {
 			if(resultSet != 0) {
 				PrintWriter pr3 = response.getWriter();
 				pr3.append("<html><center><b>"+userName+" detail update successfully</b></center><html>");
-				RequestDispatcher rd = request.getRequestDispatcher("/home");
-				rd.include(request, response);
+//				RequestDispatcher rd = request.getRequestDispatcher("/home?username="+userName);
+//				rd.forward(request, response);
+				response.sendRedirect("/blogger_app/home?username="+userName);
 			}
 		}catch (Exception e) {
 			// TODO: handle exception
