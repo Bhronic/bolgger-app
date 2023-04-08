@@ -14,6 +14,7 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 
 import com.blogger.dbconnection.DbConnection;
 import com.mysql.cj.util.StringUtils;
@@ -43,30 +44,43 @@ public class Welcome extends HttpServlet {
 		response.setContentType("text/html");
 
 		try {
-			String userName = request.getParameter("username");
-			Connection connection = new DbConnection().getConnection();
-			PrintWriter pr = response.getWriter();
-			pr.append("<html>" + "<head>\r\n" + "<style>\r\n" + "table {\r\n" + "  border-collapse: collapse;\r\n"
-					+ "  width: 100%;\r\n" + "}\r\n" + "\r\n" + "th, td {\r\n" + "  text-align: left;\r\n"
-					+ "  padding: 8px;\r\n" + "}\r\n" + "\r\n" + "tr:nth-child(even) {\r\n"
-					+ "  background-color: #D6EEEE;\r\n" + "}\r\n" + "body {\r\n" + "	padding-left: 25%;\r\n"
-					+ "	padding-right: 25%;\r\n" + "}" + "</style>\r\n" + "</head>"
-					+ "<body style=\"background: aliceblue;\"><table >");
-			pr.append("<tr><td><b>welcome</b></td><td> " + userName + "</td></tr></table>");
-			pr.append("<table>");
-			pr.append("<tr><td>id</th><th>name</th><th>email id</th><th align= center colspan=2>action </th></tr>");
 
-			PreparedStatement query = connection.prepareStatement("select * from user");
-			ResultSet resultlist = query.executeQuery();
-			while (resultlist.next()) {
-				pr.append("<tr><td>" + resultlist.getString("id") + "</td><td>" + resultlist.getString("name")
-						+ "</td><td>" + resultlist.getString("emailid") + "</td><td><a href=edit?id="
-						+ resultlist.getString("id") + ">edit<a/</td><td><a href=delete?id="
-						+ resultlist.getString("id") + "&username=" + resultlist.getString("name")
-						+ ">delete</a></td></tr>");
+			HttpSession session = request.getSession(false);
+
+			String sessionEmailId = (String) session.getAttribute("emailId");
+			if (null != sessionEmailId) {
+
+				String userName = request.getParameter("username");
+				Connection connection = new DbConnection().getConnection();
+				PrintWriter pr = response.getWriter();
+				pr.append("<html>" + "<head>\r\n" + "<style>\r\n" + "table {\r\n" + "  border-collapse: collapse;\r\n"
+						+ "  width: 100%;\r\n" + "}\r\n" + "\r\n" + "th, td {\r\n" + "  text-align: left;\r\n"
+						+ "  padding: 8px;\r\n" + "}\r\n" + "\r\n" + "tr:nth-child(even) {\r\n"
+						+ "  background-color: #D6EEEE;\r\n" + "}\r\n" + "body {\r\n" + "	padding-left: 25%;\r\n"
+						+ "	padding-right: 25%;\r\n" + "}" + "</style>\r\n" + "</head>"
+						+ "<body style=\"background: aliceblue;\"><table >");
+				pr.append("<tr><td><b>Welcome </b>" + sessionEmailId + "</td><td></td>"
+						+ "<td><a href=logout><button>logout</button></a></td>" + "</tr></table>");
+				pr.append("<table>");
+				pr.append("<tr><td>id</th><th>name</th><th>email id</th><th align= center colspan=2>action </th></tr>");
+
+				PreparedStatement query = connection.prepareStatement("select * from user");
+				ResultSet resultlist = query.executeQuery();
+				while (resultlist.next()) {
+					pr.append("<tr><td>" + resultlist.getString("id") + "</td><td>" + resultlist.getString("name")
+							+ "</td><td>" + resultlist.getString("emailid") + "</td><td><a href=edit?id="
+							+ resultlist.getString("id") + ">edit<a/</td><td><a href=delete?id="
+							+ resultlist.getString("id") + "&username=" + resultlist.getString("name")
+							+ ">delete</a></td></tr>");
+				}
+
+				pr.append("</table></body></html>");
+			} else {
+				RequestDispatcher rd = request.getRequestDispatcher("/index.jsp");
+				PrintWriter pr3 = response.getWriter();
+				pr3.append("<html><center><b>You have to login first.</b></center><html>");
+				rd.include(request, response);
 			}
-
-			pr.append("</table></body></html>");
 
 		} catch (ClassNotFoundException | SQLException e) {
 			// TODO Auto-generated catch block
@@ -102,34 +116,48 @@ public class Welcome extends HttpServlet {
 				ResultSet resultSet = st.executeQuery();
 
 				if (resultSet.next()) {
-					System.out.println("call result set......");
+
 					if (userName.equals(resultSet.getString("emailid"))
 							& password.equals(resultSet.getString("password"))) {
-						PrintWriter pr = response.getWriter();
-						pr.append("<html>" + "<head>\r\n" + "<style>\r\n" + "table {\r\n"
-								+ "  border-collapse: collapse;\r\n" + "  width: 100%;\r\n" + "}\r\n" + "\r\n"
-								+ "th, td {\r\n" + "  text-align: left;\r\n" + "  padding: 8px;\r\n" + "}\r\n" + "\r\n"
-								+ "tr:nth-child(even) {\r\n" + "  background-color: #D6EEEE;\r\n" + "}\r\n"
-								+ "body {\r\n" + "	padding-left: 25%;\r\n" + "	padding-right: 25%;\r\n" + "}"
-								+ "</style>\r\n" + "</head>" + "<body style=\"background: aliceblue;\"><table >");
-						pr.append("<tr><td><b>welcome</b></td><td> " + userName + "</td></tr></table>");
-						pr.append("<table>");
-						pr.append(
-								"<tr><td>id</th><th>name</th><th>email id</th><th align= center colspan=2>action </th></tr>");
+						// create new session
+						HttpSession session = request.getSession();
+						session.setAttribute("emailId", userName);
 
-						PreparedStatement query = connection.prepareStatement("select * from user");
-						ResultSet resultlist = query.executeQuery();
-						while (resultlist.next()) {
-							pr.append("<tr><td>" + resultlist.getString("id") + "</td><td>"
-									+ resultlist.getString("name") + "</td><td>" + resultlist.getString("emailid")
-									+ "</td><td><a href=edit?id=" + resultlist.getString("id")
-									+ ">edit<a/</td><td><a href=delete?id=" + resultlist.getString("id") + "&username="
-									+ resultlist.getString("name") + ">delete</a></td></tr>");
+						if (session != null) {
+
+							PrintWriter pr = response.getWriter();
+							pr.append("<html>" + "<head>\r\n" + "<style>\r\n" + "table {\r\n"
+									+ "  border-collapse: collapse;\r\n" + "  width: 100%;\r\n" + "}\r\n" + "\r\n"
+									+ "th, td {\r\n" + "  text-align: left;\r\n" + "  padding: 8px;\r\n" + "}\r\n"
+									+ "\r\n" + "tr:nth-child(even) {\r\n" + "  background-color: #D6EEEE;\r\n" + "}\r\n"
+									+ "body {\r\n" + "	padding-left: 25%;\r\n" + "	padding-right: 25%;\r\n" + "}"
+									+ "</style>\r\n" + "</head>" + "<body style=\"background: aliceblue;\"><table >");
+							pr.append("<tr><td><b>Welcome </b> " + userName + "</td><td> </td>"
+									+ "<td><a href=logout><button>logout</button></a></td>" + "</tr></table>");
+							pr.append("<table>");
+							pr.append(
+									"<tr><td>id</th><th>name</th><th>email id</th><th align= center colspan=2>action </th></tr>");
+
+							PreparedStatement query = connection.prepareStatement("select * from user");
+							ResultSet resultlist = query.executeQuery();
+							while (resultlist.next()) {
+								pr.append("<tr><td>" + resultlist.getString("id") + "</td><td>"
+										+ resultlist.getString("name") + "</td><td>" + resultlist.getString("emailid")
+										+ "</td><td><a href=edit?id=" + resultlist.getString("id")
+										+ ">edit<a/</td><td><a href=delete?id=" + resultlist.getString("id")
+										+ "&username=" + resultlist.getString("name") + ">delete</a></td></tr>");
+							}
+
+							pr.append("</table></body></html>");
+
+							System.out.println(resultSet.getString("emailid") + ", " + resultSet.getString("password"));
+						} else {
+							RequestDispatcher rd = request.getRequestDispatcher("/index.jsp");
+							PrintWriter pr3 = response.getWriter();
+							pr3.append("<html><center><b>You have to login first.</b></center><html>");
+							rd.include(request, response);
+
 						}
-
-						pr.append("</table></body></html>");
-
-						System.out.println(resultSet.getString("emailid") + ", " + resultSet.getString("password"));
 					}
 
 				} else {
