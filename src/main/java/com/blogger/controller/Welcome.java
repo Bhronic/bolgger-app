@@ -6,7 +6,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
+import java.util.List;
+import java.util.Optional;
 
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
@@ -17,6 +18,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
 import com.blogger.dbconnection.DbConnection;
+import com.blogger.model.User;
 import com.mysql.cj.util.StringUtils;
 
 /**
@@ -25,6 +27,7 @@ import com.mysql.cj.util.StringUtils;
 @WebServlet("/home")
 public class Welcome extends HttpServlet {
 	private static final long serialVersionUID = 1L;
+	private static final int limit = 4;
 
 	/**
 	 * @see HttpServlet#HttpServlet()
@@ -46,11 +49,16 @@ public class Welcome extends HttpServlet {
 		try {
 
 			HttpSession session = request.getSession(false);
+			System.out.println("========>\nsession created time: " + session.getCreationTime());
+			System.out.println("session access time: " + session.getLastAccessedTime());
 
 			String sessionEmailId = (String) session.getAttribute("emailId");
-			if (null != sessionEmailId) {
+			Optional.ofNullable(sessionEmailId);
+			if (!Optional.ofNullable(sessionEmailId).isEmpty()) {
 
 				String userName = request.getParameter("username");
+				int pageNo = Integer.parseInt(request.getParameter("page"));
+
 				Connection connection = new DbConnection().getConnection();
 				PrintWriter pr = response.getWriter();
 				pr.append("<html>" + "<head>\r\n" + "<style>\r\n" + "table {\r\n" + "  border-collapse: collapse;\r\n"
@@ -64,17 +72,16 @@ public class Welcome extends HttpServlet {
 				pr.append("<table>");
 				pr.append("<tr><td>id</th><th>name</th><th>email id</th><th align= center colspan=2>action </th></tr>");
 
-				PreparedStatement query = connection.prepareStatement("select * from user");
-				ResultSet resultlist = query.executeQuery();
-				while (resultlist.next()) {
-					pr.append("<tr><td>" + resultlist.getString("id") + "</td><td>" + resultlist.getString("name")
-							+ "</td><td>" + resultlist.getString("emailid") + "</td><td><a href=edit?id="
-							+ resultlist.getString("id") + ">edit<a/</td><td><a href=delete?id="
-							+ resultlist.getString("id") + "&username=" + resultlist.getString("name")
-							+ ">delete</a></td></tr>");
-				}
+				// user list
+				getUserList(pr, pageNo, limit);
 
-				pr.append("</table></body></html>");
+				pr.append("</table>");
+
+				// Pagination
+				addPageingUrl(pr, userName);
+
+				pr.append("</body></html>");
+
 			} else {
 				RequestDispatcher rd = request.getRequestDispatcher("/index.jsp");
 				PrintWriter pr3 = response.getWriter();
@@ -122,6 +129,8 @@ public class Welcome extends HttpServlet {
 						// create new session
 						HttpSession session = request.getSession();
 						session.setAttribute("emailId", userName);
+						System.out.println("========>\nsession created time: " + session.getCreationTime());
+						System.out.println("session access time: " + session.getLastAccessedTime());
 
 						if (session != null) {
 
@@ -137,18 +146,15 @@ public class Welcome extends HttpServlet {
 							pr.append("<table>");
 							pr.append(
 									"<tr><td>id</th><th>name</th><th>email id</th><th align= center colspan=2>action </th></tr>");
+							// user list
+							getUserList(pr, 0, limit);
 
-							PreparedStatement query = connection.prepareStatement("select * from user");
-							ResultSet resultlist = query.executeQuery();
-							while (resultlist.next()) {
-								pr.append("<tr><td>" + resultlist.getString("id") + "</td><td>"
-										+ resultlist.getString("name") + "</td><td>" + resultlist.getString("emailid")
-										+ "</td><td><a href=edit?id=" + resultlist.getString("id")
-										+ ">edit<a/</td><td><a href=delete?id=" + resultlist.getString("id")
-										+ "&username=" + resultlist.getString("name") + ">delete</a></td></tr>");
-							}
+							pr.append("</table>");
 
-							pr.append("</table></body></html>");
+							// Pagination
+							addPageingUrl(pr, userName);
+
+							pr.append("</body></html>");
 
 							System.out.println(resultSet.getString("emailid") + ", " + resultSet.getString("password"));
 						} else {
@@ -178,10 +184,29 @@ public class Welcome extends HttpServlet {
 	}
 
 	boolean validateUser(String userName, String password) {
-		if (StringUtils.isNullOrEmpty(userName) & StringUtils.isNullOrEmpty(password)) {
+		if (StringUtils.isNullOrEmpty(userName) | StringUtils.isNullOrEmpty(password)) {
 			return false;
 		}
 		return true;
+	}
+
+	public void getUserList(PrintWriter pr, int pageNo, int limit) {
+		List<User> userList = new DbConnection().getUserList(pageNo, limit);
+		for (User user : userList) {
+			pr.append("<tr><td>" + user.getId() + "</td><td>" + user.getName() + "</td><td>" + user.getEmailId()
+					+ "</td><td><a href=editUserDtls.jsp?id=" + user.getId() + ">edit<a/</td><td><a href=delete?id="
+					+ user.getId() + "&username=" + user.getName() + ">delete</a></td></tr>");
+		}
+	}
+
+	public void addPageingUrl(PrintWriter pr, String userName) {
+		int noOfRecords = new DbConnection().getCount();
+		int noPages = noOfRecords / limit;
+		System.out.println("pages" + noPages);
+		for (int i = 0; i <= noPages; i++) {
+			pr.append("<a style=\"padding: 10;\" href=/blogger_app/home?username=" + userName + "&page=" + i + ">"
+					+ (i + 1) + "</a>");
+		}
 	}
 
 }

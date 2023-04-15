@@ -17,7 +17,7 @@ public class DbConnection {
 
 			// create statement
 			Statement statement = con.createStatement();
-			
+
 			String name = "jaymin";
 			String email = "jaymin@gmail.com";
 			int age = 25;
