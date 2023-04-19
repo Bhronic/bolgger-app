@@ -104,77 +104,48 @@ public class Welcome extends HttpServlet {
 			throws ServletException, IOException {
 		// TODO Auto-generated method stub
 		String userName = request.getParameter("username");
-		String password = request.getParameter("password");
 
 		try {
 			Connection connection = new DbConnection().getConnection();
-			PreparedStatement st = connection.prepareStatement("select * from user where emailid=? and password=?");
-			st.setString(1, userName);
-			st.setString(2, password);
 
-			if (!validateUser(userName, password)) {
-				RequestDispatcher rd = request.getRequestDispatcher("/index.jsp");
-				PrintWriter pr3 = response.getWriter();
-				pr3.append("<html><center><b>user name & password are not null or empty.</b></center><html>");
-				rd.include(request, response);
+			// create new session
+			HttpSession session = request.getSession();
+			session.setAttribute("emailId", userName);
+			System.out.println("========>\nsession created time: " + session.getCreationTime());
+			System.out.println("session access time: " + session.getLastAccessedTime());
+
+			if (session != null) {
+
+				PrintWriter pr = response.getWriter();
+				pr.append("<html>" + "<head>\r\n" + "<style>\r\n" + "table {\r\n" + "  border-collapse: collapse;\r\n"
+						+ "  width: 100%;\r\n" + "}\r\n" + "\r\n" + "th, td {\r\n" + "  text-align: left;\r\n"
+						+ "  padding: 8px;\r\n" + "}\r\n" + "\r\n" + "tr:nth-child(even) {\r\n"
+						+ "  background-color: #D6EEEE;\r\n" + "}\r\n" + "body {\r\n" + "	padding-left: 25%;\r\n"
+						+ "	padding-right: 25%;\r\n" + "}" + "</style>\r\n" + "</head>"
+						+ "<body style=\"background: aliceblue;\"><table >");
+				pr.append("<tr><td><b>Welcome </b> " + userName + "</td><td> </td>"
+						+ "<td><a href=logout><button>logout</button></a></td>" + "</tr></table>");
+				pr.append("<table>");
+				pr.append("<tr><td>id</th><th>name</th><th>email id</th><th align= center colspan=2>action </th></tr>");
+				// user list
+				getUserList(pr, 0, limit);
+
+				pr.append("</table>");
+
+				// Pagination
+				addPageingUrl(pr, userName);
+
+				pr.append("</body></html>");
 
 			} else {
+				RequestDispatcher rd = request.getRequestDispatcher("/index.jsp");
+				PrintWriter pr3 = response.getWriter();
+				pr3.append("<html><center><b>You have to login first.</b></center><html>");
+				rd.include(request, response);
 
-				ResultSet resultSet = st.executeQuery();
-
-				if (resultSet.next()) {
-
-					if (userName.equals(resultSet.getString("emailid"))
-							& password.equals(resultSet.getString("password"))) {
-						// create new session
-						HttpSession session = request.getSession();
-						session.setAttribute("emailId", userName);
-						System.out.println("========>\nsession created time: " + session.getCreationTime());
-						System.out.println("session access time: " + session.getLastAccessedTime());
-
-						if (session != null) {
-
-							PrintWriter pr = response.getWriter();
-							pr.append("<html>" + "<head>\r\n" + "<style>\r\n" + "table {\r\n"
-									+ "  border-collapse: collapse;\r\n" + "  width: 100%;\r\n" + "}\r\n" + "\r\n"
-									+ "th, td {\r\n" + "  text-align: left;\r\n" + "  padding: 8px;\r\n" + "}\r\n"
-									+ "\r\n" + "tr:nth-child(even) {\r\n" + "  background-color: #D6EEEE;\r\n" + "}\r\n"
-									+ "body {\r\n" + "	padding-left: 25%;\r\n" + "	padding-right: 25%;\r\n" + "}"
-									+ "</style>\r\n" + "</head>" + "<body style=\"background: aliceblue;\"><table >");
-							pr.append("<tr><td><b>Welcome </b> " + userName + "</td><td> </td>"
-									+ "<td><a href=logout><button>logout</button></a></td>" + "</tr></table>");
-							pr.append("<table>");
-							pr.append(
-									"<tr><td>id</th><th>name</th><th>email id</th><th align= center colspan=2>action </th></tr>");
-							// user list
-							getUserList(pr, 0, limit);
-
-							pr.append("</table>");
-
-							// Pagination
-							addPageingUrl(pr, userName);
-
-							pr.append("</body></html>");
-
-							System.out.println(resultSet.getString("emailid") + ", " + resultSet.getString("password"));
-						} else {
-							RequestDispatcher rd = request.getRequestDispatcher("/index.jsp");
-							PrintWriter pr3 = response.getWriter();
-							pr3.append("<html><center><b>You have to login first.</b></center><html>");
-							rd.include(request, response);
-
-						}
-					}
-
-				} else {
-					PrintWriter pr3 = response.getWriter();
-					pr3.append("<html><center><b>user name & password are not valid.</b></center><html>");
-					RequestDispatcher rd = request.getRequestDispatcher("/index.jsp");
-					rd.include(request, response);
-				}
-
-				new DbConnection().closeConnection(connection);
 			}
+
+			new DbConnection().closeConnection(connection);
 
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
