@@ -17,6 +17,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
+import com.blogger.dao.UserDao;
+import com.blogger.daoimpl.UserDaoImpl;
 import com.blogger.dbconnection.DbConnection;
 import com.blogger.model.User;
 import com.mysql.cj.util.StringUtils;
@@ -28,6 +30,8 @@ import com.mysql.cj.util.StringUtils;
 public class Welcome extends HttpServlet {
 	private static final long serialVersionUID = 1L;
 	private static final int limit = 4;
+
+	private UserDao dao = new UserDaoImpl();
 
 	/**
 	 * @see HttpServlet#HttpServlet()
@@ -124,7 +128,8 @@ public class Welcome extends HttpServlet {
 						+ "	padding-right: 25%;\r\n" + "}" + "</style>\r\n" + "</head>"
 						+ "<body style=\"background: aliceblue;\"><table >");
 				pr.append("<tr><td><b>Welcome </b> " + userName + "</td><td> </td>"
-						+ "<td><a href=logout><button>logout</button></a></td>" + "</tr></table>");
+						+ "<td><a href=blog.jsp><button>Add Blog</button></a><a href=logout><button>logout</button></a></td>"
+						+ "</tr></table>");
 				pr.append("<table>");
 				pr.append("<tr><td>id</th><th>name</th><th>email id</th><th align= center colspan=2>action </th></tr>");
 				// user list
@@ -162,7 +167,7 @@ public class Welcome extends HttpServlet {
 	}
 
 	public void getUserList(PrintWriter pr, int pageNo, int limit) {
-		List<User> userList = new DbConnection().getUserList(pageNo, limit);
+		List<User> userList = dao.getUserList(pageNo, limit);
 		for (User user : userList) {
 			pr.append("<tr><td>" + user.getId() + "</td><td>" + user.getName() + "</td><td>" + user.getEmailId()
 					+ "</td><td><a href=editUserDtls.jsp?id=" + user.getId() + ">edit<a/</td><td><a href=delete?id="
@@ -171,7 +176,8 @@ public class Welcome extends HttpServlet {
 	}
 
 	public void addPageingUrl(PrintWriter pr, String userName) {
-		int noOfRecords = new DbConnection().getCount();
+
+		int noOfRecords = dao.getCount();
 		int noPages = noOfRecords / limit;
 		System.out.println("pages" + noPages);
 		for (int i = 0; i <= noPages; i++) {
